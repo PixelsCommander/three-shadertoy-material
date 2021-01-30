@@ -1,26 +1,26 @@
-import * as THREE from 'three';
+import { RawShaderMaterial, Clock, Vector4, Vector3, Vector2, TextureLoader } from 'three';
 
 import vert from './shaders/shader.vert';
 import frag from './shaders/shader.frag';
 
 import commentRegex from 'comment-regex';
 
+const transparentize = `float a = max(max(fragColor.r, fragColor.g),fragColor.b);\nfragColor = vec4(fragColor.xyz, a);\n}`;
 
-export default class ShaderToyMaterial extends THREE.RawShaderMaterial {
+export default class ShaderToyMaterial extends RawShaderMaterial {
 
     constructor(shaderToySample, options_) {
 
         var options = options_ || {};
         options.aspectRatio = options.aspectRatio || 1500 / 750;
         let width = 1500;
-        let hieght = width / options.aspectRatio;
+        let height = width / options.aspectRatio;
         options.width = width;
-        options.hieght = hieght;
-
+        options.height = height;
 
         let usedUniforms = ShaderToyMaterial.retriveUsedUniforms(shaderToySample);
 
-        var clock = new THREE.Clock();
+        var clock = new Clock();
         super({
             vertexShader: vert,
             fragmentShader: "",
@@ -31,24 +31,21 @@ export default class ShaderToyMaterial extends THREE.RawShaderMaterial {
             this.registerUpdate();
         }
 
-
-
-
-
-
         let data = this.createUniformsObject(usedUniforms, options);
 
         this.uniforms = data.prof;
         var finalfrag = frag + "\n" + data.code + "\n" + shaderToySample;
 
+        if (options.transparentize) {
+            const n = finalfrag.lastIndexOf('}');
+            finalfrag = finalfrag.substring(0, n) + "\n" + transparentize;
+        }
+
         this.fragmentShader = finalfrag;
-
-
     }
 
     registerUpdate() {
         setTimeout(() => this.update(), 0);
-
     }
 
     update() {
@@ -66,7 +63,7 @@ export default class ShaderToyMaterial extends THREE.RawShaderMaterial {
         if (this.uniforms.iDate) {
             let dt = new Date;
             let sec = dt.getSeconds() + (60 * dt.getMinutes()) + (60 * 60 * dt.getHours());
-            this.uniforms.iDate.value = new THREE.Vector4(
+            this.uniforms.iDate.value = new Vector4(
                 dt.getFullYear(), dt.getMonth(), dt.getDay(), sec
             );
         }
@@ -76,27 +73,20 @@ export default class ShaderToyMaterial extends THREE.RawShaderMaterial {
             let checkchannel = (i) => {
 
                 if (this.uniforms["iChannel" + i] && this.uniforms["iChannel" + i].value.image) {
-
-                    this.uniforms.iChannelResolution.value[i] = new THREE.Vector3(
+                    this.uniforms.iChannelResolution.value[i] = new Vector3(
                         this.uniforms["iChannel" + i].value.image.width,
                         this.uniforms["iChannel" + i].value.image.height);
-
-
                 }
             }
-
 
             for (let index = 0; index < 4; index++) {
                 checkchannel(index);
             }
-
-
         }
-
-
-        requestAnimationFrame(() => { this.update() });
+        requestAnimationFrame(() => {
+            this.update()
+        });
     }
-
 
     //Returns uniforms need
     static retriveUsedUniforms(shaderToySample) {
@@ -112,7 +102,7 @@ export default class ShaderToyMaterial extends THREE.RawShaderMaterial {
         uniform samplerXX iChannel0..3; // input channel. XX = 2D/Cube
         uniform vec4 iDate; //Do (year, month, day, time in seconds)
         uniform float iSampleRate; //Wont Do sound sample rate (i.e., 44100)
-        
+
         */
         let commentLessShader = shaderToySample.replace(commentRegex(), "");
         let expectedUniforms = "iTime,iTimeDelta,iResolution,iFrame,iChannelTime[4],iChannelResolution,iChannel0,iChannel1,iChannel2,iChannel3,iDate,iMouse".split(",");
@@ -128,10 +118,10 @@ export default class ShaderToyMaterial extends THREE.RawShaderMaterial {
 
     createUniformsObject(usedUniforms, options) {
         let uniforms = {};
-        let uniformsCode = ""
+        let uniformsCode = "";
 
         if (usedUniforms.iResolution) {
-            uniforms.iResolution = { value: new THREE.Vector2(options.width, options.hieght) }
+            uniforms.iResolution = { value: new Vector2(options.width, options.hieght) }
         }
 
         if (usedUniforms.iTime) {
@@ -139,7 +129,7 @@ export default class ShaderToyMaterial extends THREE.RawShaderMaterial {
             uniformsCode += "uniform float iTime;\n";
         }
         if (usedUniforms.iDate) {
-            uniforms.iDate = { value: new THREE.Vector4() };
+            uniforms.iDate = { value: new Vector4() };
             uniformsCode += "uniform vec4 iDate;\n";
         }
 
@@ -159,67 +149,50 @@ export default class ShaderToyMaterial extends THREE.RawShaderMaterial {
 
         if (usedUniforms.iMouse) {
             uniforms.iMouse = {
-                value: new THREE.Vector4(
+                value: new Vector4(
                     options.width / 2,
-                    options.hieght / 2,
+                    options.height / 2,
                     options.width / 2,
-                    options.hieght / 2,
+                    options.height / 2
                 )
             };
             uniformsCode += "uniform vec4 iMouse;\n";
         }
 
-
-
         let this_ = this;
 
         if (usedUniforms["iChannelResolution"]) {
-
-            uniforms["iChannelResolution"] = {
-                type: "v3v", value: [
-                    new THREE.Vector3(),
-                    new THREE.Vector3(),
-                    new THREE.Vector3(),
-                    new THREE.Vector3(),
-                ]
-            };
-
+            uniforms["iChannelResolution"] = { type: "v3v", value: [
+                    new Vector3(),
+                    new Vector3(),
+                    new Vector3(),
+                    new Vector3()
+                ] };
             uniformsCode += "uniform vec3 iChannelResolution[4];\n";
         }
 
         function checkchannel(i) {
-
             if (usedUniforms["iChannel" + i]) {
 
                 let texture = options.map ? options.map : this_.getDefaultTexture();
                 texture = (Array.isArray(texture)) ? texture[i] : texture;
                 uniforms["iChannel" + i] = { type: "t", value: texture }
                 uniformsCode += "uniform sampler2D " + ["iChannel" + i] + ";\n";
-
             }
         }
-
 
         for (let index = 0; index < 4; index++) {
             checkchannel(index);
         }
-
-
-
-
 
         return { prof: uniforms, code: uniformsCode };
     }
 
     getDefaultTexture() {
         if (!ShaderToyMaterial.defaultTexture)
-            ShaderToyMaterial.defaultTexture = new THREE.TextureLoader().load("https://threejs.org/examples/textures/UV_Grid_Sm.jpg", () => {
+            ShaderToyMaterial.defaultTexture = new TextureLoader().load("https://threejs.org/examples/textures/UV_Grid_Sm.jpg", () => {
                 this.update();
             });
-
         return ShaderToyMaterial.defaultTexture;
-
     }
-
-
 }

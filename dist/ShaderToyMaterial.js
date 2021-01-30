@@ -146,6 +146,7 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
+const transparentize = `float a = max(max(fragColor.r, fragColor.g),fragColor.b);\nfragColor = vec4(fragColor.xyz, a);\n}`;
 
 class ShaderToyMaterial extends three__WEBPACK_IMPORTED_MODULE_0__["RawShaderMaterial"] {
 
@@ -154,10 +155,9 @@ class ShaderToyMaterial extends three__WEBPACK_IMPORTED_MODULE_0__["RawShaderMat
         var options = options_ || {};
         options.aspectRatio = options.aspectRatio || 1500 / 750;
         let width = 1500;
-        let hieght = width / options.aspectRatio;
+        let height = width / options.aspectRatio;
         options.width = width;
-        options.hieght = hieght;
-
+        options.height = height;
 
         let usedUniforms = ShaderToyMaterial.retriveUsedUniforms(shaderToySample);
 
@@ -172,24 +172,21 @@ class ShaderToyMaterial extends three__WEBPACK_IMPORTED_MODULE_0__["RawShaderMat
             this.registerUpdate();
         }
 
-
-
-
-
-
         let data = this.createUniformsObject(usedUniforms, options);
 
         this.uniforms = data.prof;
         var finalfrag = _shaders_shader_frag__WEBPACK_IMPORTED_MODULE_2___default.a + "\n" + data.code + "\n" + shaderToySample;
 
+        if (options.transparentize) {
+            const n = finalfrag.lastIndexOf('}');
+            finalfrag = finalfrag.substring(0, n) + "\n" + transparentize;
+        }
+
         this.fragmentShader = finalfrag;
-
-
     }
 
     registerUpdate() {
         setTimeout(() => this.update(), 0);
-
     }
 
     update() {
@@ -217,27 +214,20 @@ class ShaderToyMaterial extends three__WEBPACK_IMPORTED_MODULE_0__["RawShaderMat
             let checkchannel = (i) => {
 
                 if (this.uniforms["iChannel" + i] && this.uniforms["iChannel" + i].value.image) {
-
                     this.uniforms.iChannelResolution.value[i] = new three__WEBPACK_IMPORTED_MODULE_0__["Vector3"](
                         this.uniforms["iChannel" + i].value.image.width,
                         this.uniforms["iChannel" + i].value.image.height);
-
-
                 }
             }
-
 
             for (let index = 0; index < 4; index++) {
                 checkchannel(index);
             }
-
-
         }
-
-
-        requestAnimationFrame(() => { this.update() });
+        requestAnimationFrame(() => {
+            this.update()
+        });
     }
-
 
     //Returns uniforms need
     static retriveUsedUniforms(shaderToySample) {
@@ -253,7 +243,7 @@ class ShaderToyMaterial extends three__WEBPACK_IMPORTED_MODULE_0__["RawShaderMat
         uniform samplerXX iChannel0..3; // input channel. XX = 2D/Cube
         uniform vec4 iDate; //Do (year, month, day, time in seconds)
         uniform float iSampleRate; //Wont Do sound sample rate (i.e., 44100)
-        
+
         */
         let commentLessShader = shaderToySample.replace(comment_regex__WEBPACK_IMPORTED_MODULE_3___default()(), "");
         let expectedUniforms = "iTime,iTimeDelta,iResolution,iFrame,iChannelTime[4],iChannelResolution,iChannel0,iChannel1,iChannel2,iChannel3,iDate,iMouse".split(",");
@@ -269,7 +259,7 @@ class ShaderToyMaterial extends three__WEBPACK_IMPORTED_MODULE_0__["RawShaderMat
 
     createUniformsObject(usedUniforms, options) {
         let uniforms = {};
-        let uniformsCode = ""
+        let uniformsCode = "";
 
         if (usedUniforms.iResolution) {
             uniforms.iResolution = { value: new three__WEBPACK_IMPORTED_MODULE_0__["Vector2"](options.width, options.hieght) }
@@ -302,52 +292,39 @@ class ShaderToyMaterial extends three__WEBPACK_IMPORTED_MODULE_0__["RawShaderMat
             uniforms.iMouse = {
                 value: new three__WEBPACK_IMPORTED_MODULE_0__["Vector4"](
                     options.width / 2,
-                    options.hieght / 2,
+                    options.height / 2,
                     options.width / 2,
-                    options.hieght / 2,
+                    options.height / 2
                 )
             };
             uniformsCode += "uniform vec4 iMouse;\n";
         }
 
-
-
         let this_ = this;
 
         if (usedUniforms["iChannelResolution"]) {
-
-            uniforms["iChannelResolution"] = {
-                type: "v3v", value: [
+            uniforms["iChannelResolution"] = { type: "v3v", value: [
                     new three__WEBPACK_IMPORTED_MODULE_0__["Vector3"](),
                     new three__WEBPACK_IMPORTED_MODULE_0__["Vector3"](),
                     new three__WEBPACK_IMPORTED_MODULE_0__["Vector3"](),
-                    new three__WEBPACK_IMPORTED_MODULE_0__["Vector3"](),
-                ]
-            };
-
+                    new three__WEBPACK_IMPORTED_MODULE_0__["Vector3"]()
+                ] };
             uniformsCode += "uniform vec3 iChannelResolution[4];\n";
         }
 
         function checkchannel(i) {
-
             if (usedUniforms["iChannel" + i]) {
 
                 let texture = options.map ? options.map : this_.getDefaultTexture();
                 texture = (Array.isArray(texture)) ? texture[i] : texture;
                 uniforms["iChannel" + i] = { type: "t", value: texture }
                 uniformsCode += "uniform sampler2D " + ["iChannel" + i] + ";\n";
-
             }
         }
-
 
         for (let index = 0; index < 4; index++) {
             checkchannel(index);
         }
-
-
-
-
 
         return { prof: uniforms, code: uniformsCode };
     }
@@ -357,13 +334,10 @@ class ShaderToyMaterial extends three__WEBPACK_IMPORTED_MODULE_0__["RawShaderMat
             ShaderToyMaterial.defaultTexture = new three__WEBPACK_IMPORTED_MODULE_0__["TextureLoader"]().load("https://threejs.org/examples/textures/UV_Grid_Sm.jpg", () => {
                 this.update();
             });
-
         return ShaderToyMaterial.defaultTexture;
-
     }
-
-
 }
+
 
 /***/ }),
 
