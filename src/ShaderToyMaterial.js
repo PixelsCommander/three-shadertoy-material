@@ -121,7 +121,7 @@ export default class ShaderToyMaterial extends RawShaderMaterial {
         let uniformsCode = "";
 
         if (usedUniforms.iResolution) {
-            uniforms.iResolution = { value: new Vector2(options.width, options.hieght) }
+            uniforms.iResolution = { value: new Vector2(options.width, options.height) }
         }
 
         if (usedUniforms.iTime) {

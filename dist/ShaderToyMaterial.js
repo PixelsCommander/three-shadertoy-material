@@ -262,7 +262,7 @@ class ShaderToyMaterial extends three__WEBPACK_IMPORTED_MODULE_0__["RawShaderMat
         let uniformsCode = "";
 
         if (usedUniforms.iResolution) {
-            uniforms.iResolution = { value: new three__WEBPACK_IMPORTED_MODULE_0__["Vector2"](options.width, options.hieght) }
+            uniforms.iResolution = { value: new three__WEBPACK_IMPORTED_MODULE_0__["Vector2"](options.width, options.height) }
         }
 
         if (usedUniforms.iTime) {
