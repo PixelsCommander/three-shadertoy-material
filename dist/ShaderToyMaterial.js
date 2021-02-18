@@ -146,12 +146,11 @@ __webpack_require__.r(__webpack_exports__);
 
 
 
-const transparentize = `float a = max(max(fragColor.r, fragColor.g),fragColor.b);\nfragColor = vec4(fragColor.xyz, a);\n}`;
+const transparentize = `vec2 transparentizeUv = fragCoord.xy / iResolution.xy;\nfloat textureAlpha = texture( iChannel0, transparentizeUv ).a;\nfloat sumA = fragColor.r + fragColor.g + fragColor.b;\nfragColor = vec4(fragColor.xyz, sumA + textureAlpha);\n}`;
 
 class ShaderToyMaterial extends three__WEBPACK_IMPORTED_MODULE_0__["RawShaderMaterial"] {
 
     constructor(shaderToySample, options_) {
-
         var options = options_ || {};
         options.aspectRatio = options.aspectRatio || 1500 / 750;
         let width = 1500;

@@ -5,12 +5,11 @@ import frag from './shaders/shader.frag';
 
 import commentRegex from 'comment-regex';
 
-const transparentize = `float a = max(max(fragColor.r, fragColor.g),fragColor.b);\nfragColor = vec4(fragColor.xyz, a);\n}`;
+const transparentize = `vec2 transparentizeUv = fragCoord.xy / iResolution.xy;\nfloat textureAlpha = texture( iChannel0, transparentizeUv ).a;\nfloat sumA = fragColor.r + fragColor.g + fragColor.b;\nfragColor = vec4(fragColor.xyz, sumA + textureAlpha);\n}`;
 
 export default class ShaderToyMaterial extends RawShaderMaterial {
 
     constructor(shaderToySample, options_) {
-
         var options = options_ || {};
         options.aspectRatio = options.aspectRatio || 1500 / 750;
         let width = 1500;
